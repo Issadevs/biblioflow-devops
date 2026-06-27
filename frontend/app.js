@@ -2,6 +2,8 @@ const state = { books: [], loans: [] };
 
 const elements = {
   alert: document.querySelector("#alert"),
+  systemStatus: document.querySelector("#system-status"),
+  systemStatusLabel: document.querySelector("#system-status-label"),
   bookCount: document.querySelector("#book-count"),
   stockCount: document.querySelector("#stock-count"),
   loanCount: document.querySelector("#loan-count"),
@@ -15,10 +17,17 @@ const elements = {
 
 const request = async (url, options) => {
   const response = await fetch(url, options);
-  const payload = await response.json();
+  const payload = await response.json().catch(() => ({}));
   if (!response.ok)
     throw new Error(payload.error?.message ?? "La requête a échoué");
   return payload.data;
+};
+
+const setConnectivity = (connected) => {
+  elements.systemStatus.classList.toggle("offline", !connected);
+  elements.systemStatusLabel.textContent = connected
+    ? "Services connectés"
+    : "Services indisponibles";
 };
 
 const showMessage = (message, success = false) => {
@@ -122,24 +131,28 @@ const render = () => {
   renderLoans();
 };
 
-const load = async () => {
+const load = async ({ clearMessage = true } = {}) => {
   try {
     [state.books, state.loans] = await Promise.all([
       request("/api/books"),
       request("/api/loans"),
     ]);
-    elements.alert.hidden = true;
+    if (clearMessage) elements.alert.hidden = true;
+    setConnectivity(true);
     render();
+    return true;
   } catch (error) {
+    setConnectivity(false);
     showMessage(error.message);
+    return false;
   }
 };
 
 const returnLoan = async (id) => {
   try {
     await request(`/api/loans/${id}/return`, { method: "POST" });
-    showMessage("Retour enregistré.", true);
-    await load();
+    if (await load({ clearMessage: false }))
+      showMessage("Retour enregistré.", true);
   } catch (error) {
     showMessage(error.message);
   }
@@ -147,7 +160,8 @@ const returnLoan = async (id) => {
 
 elements.loanForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const data = new FormData(event.currentTarget);
+  const form = event.currentTarget;
+  const data = new FormData(form);
   try {
     await request("/api/loans", {
       method: "POST",
@@ -157,9 +171,9 @@ elements.loanForm.addEventListener("submit", async (event) => {
         borrowerName: data.get("borrowerName"),
       }),
     });
-    event.currentTarget.reset();
-    showMessage("Emprunt enregistré.", true);
-    await load();
+    form.reset();
+    if (await load({ clearMessage: false }))
+      showMessage("Emprunt enregistré.", true);
   } catch (error) {
     showMessage(error.message);
   }
@@ -167,7 +181,8 @@ elements.loanForm.addEventListener("submit", async (event) => {
 
 elements.bookForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const data = new FormData(event.currentTarget);
+  const form = event.currentTarget;
+  const data = new FormData(form);
   try {
     await request("/api/books", {
       method: "POST",
@@ -179,13 +194,13 @@ elements.bookForm.addEventListener("submit", async (event) => {
         stock: Number(data.get("stock")),
       }),
     });
-    event.currentTarget.reset();
-    showMessage("Livre ajouté au catalogue.", true);
-    await load();
+    form.reset();
+    if (await load({ clearMessage: false }))
+      showMessage("Livre ajouté au catalogue.", true);
   } catch (error) {
     showMessage(error.message);
   }
 });
 
-elements.refreshButton.addEventListener("click", load);
+elements.refreshButton.addEventListener("click", () => load());
 load();

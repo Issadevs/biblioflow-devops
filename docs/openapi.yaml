@@ -3,9 +3,33 @@ info:
   title: BiblioFlow API
   version: 1.0.0
   description: API distribuée de catalogue et de gestion des emprunts.
+  license:
+    name: UNLICENSED
+    identifier: LicenseRef-UNLICENSED
 servers:
   - url: http://localhost:8080
+security: []
 paths:
+  /health:
+    servers:
+      - url: http://localhost:3001
+        description: API Catalogue
+      - url: http://localhost:3002
+        description: API Emprunts
+    get:
+      operationId: getServiceHealth
+      summary: Vérifier la santé d'un backend
+      responses:
+        "200":
+          description: Service opérationnel
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, service]
+                properties:
+                  status: { type: string, const: ok }
+                  service: { type: string, enum: [catalog, loans] }
   /api/books:
     get:
       operationId: listBooks
@@ -22,6 +46,7 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Book" }
+        "500": { $ref: "#/components/responses/InternalError" }
     post:
       operationId: createBook
       summary: Ajouter un livre
@@ -41,6 +66,7 @@ paths:
                   data: { $ref: "#/components/schemas/Book" }
         "400": { $ref: "#/components/responses/ValidationError" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
   /api/books/{id}:
     parameters:
       - $ref: "#/components/parameters/BookId"
@@ -56,7 +82,9 @@ paths:
                 type: object
                 properties:
                   data: { $ref: "#/components/schemas/Book" }
+        "400": { $ref: "#/components/responses/ValidationError" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
   /api/books/{id}/stock:
     parameters:
       - $ref: "#/components/parameters/BookId"
@@ -71,7 +99,11 @@ paths:
               type: object
               required: [delta]
               properties:
-                delta: { type: integer, minimum: -1000, maximum: 1000 }
+                delta:
+                  type: integer
+                  minimum: -1000
+                  maximum: 1000
+                  not: { const: 0 }
       responses:
         "200":
           description: Stock ajusté
@@ -81,8 +113,10 @@ paths:
                 type: object
                 properties:
                   data: { $ref: "#/components/schemas/Book" }
+        "400": { $ref: "#/components/responses/ValidationError" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
   /api/loans:
     get:
       operationId: listLoans
@@ -98,6 +132,7 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Loan" }
+        "500": { $ref: "#/components/responses/InternalError" }
     post:
       operationId: createLoan
       summary: Enregistrer un emprunt
@@ -121,9 +156,11 @@ paths:
                 properties:
                   data: { $ref: "#/components/schemas/Loan" }
         "400": { $ref: "#/components/responses/ValidationError" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503":
           description: Catalogue indisponible
+        "500": { $ref: "#/components/responses/InternalError" }
   /api/loans/{id}/return:
     parameters:
       - name: id
@@ -142,8 +179,12 @@ paths:
                 type: object
                 properties:
                   data: { $ref: "#/components/schemas/Loan" }
+        "400": { $ref: "#/components/responses/ValidationError" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "503":
+          description: Catalogue indisponible
+        "500": { $ref: "#/components/responses/InternalError" }
 components:
   parameters:
     BookId:
@@ -189,6 +230,9 @@ components:
           properties:
             code: { type: string }
             message: { type: string }
+            details:
+              type: object
+              additionalProperties: true
   responses:
     ValidationError:
       description: Données invalides
@@ -202,6 +246,11 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
     Conflict:
       description: Conflit métier
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    InternalError:
+      description: Erreur interne masquée
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }

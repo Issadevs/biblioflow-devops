@@ -39,13 +39,24 @@ jobs:
           if-no-files-found: warn
 
   containers:
-    name: Images Docker
+    name: Docker et intégration
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v7
+      - name: Installer Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
       - name: Valider la composition
         run: docker compose config --quiet
       - name: Construire les images
         run: docker compose build
+      - name: Démarrer les services
+        run: WEB_PORT=18080 docker compose up -d --wait
+      - name: Tester le parcours complet
+        run: BASE_URL=http://localhost:18080 node scripts/integration-test.mjs
+      - name: Arrêter les services
+        if: always()
+        run: WEB_PORT=18080 docker compose down -v

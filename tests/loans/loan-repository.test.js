@@ -19,9 +19,12 @@ describe("LoanRepository", () => {
   });
 
   it("liste les emprunts", async () => {
-    const loans = [{ id: "loan-1" }];
+    const loans = [{ id: "loan-1", book_id: 1 }];
     pool.query.mockResolvedValue({ rows: loans });
     await expect(repository.findAll()).resolves.toBe(loans);
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("book_id::int AS book_id"),
+    );
   });
 
   it("trouve un emprunt ou renvoie null", async () => {
