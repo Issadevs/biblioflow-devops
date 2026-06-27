@@ -1,0 +1,42 @@
+{
+  "name": "biblioflow-devops",
+  "version": "1.0.0",
+  "description": "Application DevOps de gestion d'un catalogue et d'emprunts",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start:catalog": "node src/catalog/server.js",
+    "start:loans": "node src/loans/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "node scripts/integration-test.mjs",
+    "lint": "eslint .",
+    "lint:report": "mkdir -p reports && eslint . --format json --output-file reports/eslint.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "quality": "npm run format:check && npm run lint && npm run test:coverage",
+    "report": ".venv/bin/python scripts/generate_report.py",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down -v"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "helmet": "^8.2.0",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@emnapi/core": "^1.11.1",
+    "@emnapi/runtime": "^1.11.1",
+    "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^4.1.9",
+    "eslint": "^10.6.0",
+    "prettier": "^3.9.0",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.9"
+  }
+}

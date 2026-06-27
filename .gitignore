@@ -1,0 +1,9 @@
+node_modules/
+coverage/
+reports/
+tmp/
+.idea/
+.DS_Store
+.env
+.venv/
+npm-debug.log*
