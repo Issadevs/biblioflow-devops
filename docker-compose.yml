@@ -9,6 +9,8 @@ services:
       POSTGRES_PASSWORD: biblioflow
     volumes:
       - catalog-data:/var/lib/postgresql/data
+    ports:
+      - "${CATALOG_DB_PORT:-5433}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U biblioflow -d catalog"]
       interval: 5s
@@ -24,6 +26,8 @@ services:
       POSTGRES_PASSWORD: biblioflow
     volumes:
       - loan-data:/var/lib/postgresql/data
+    ports:
+      - "${LOAN_DB_PORT:-5434}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U biblioflow -d loans"]
       interval: 5s
@@ -54,7 +58,7 @@ services:
       timeout: 3s
       retries: 10
     ports:
-      - "3001:3001"
+      - "${CATALOG_PORT:-3001}:3001"
     restart: unless-stopped
 
   loan-api:
@@ -83,7 +87,7 @@ services:
       timeout: 3s
       retries: 10
     ports:
-      - "3002:3002"
+      - "${LOAN_PORT:-3002}:3002"
     restart: unless-stopped
 
   web:

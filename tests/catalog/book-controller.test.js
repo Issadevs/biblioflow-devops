@@ -101,11 +101,19 @@ describe("API catalogue", () => {
   });
 
   it("masque une erreur interne", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     bookService.listBooks.mockRejectedValue(new Error("secret"));
     const response = await request(app).get("/api/books").expect(500);
     expect(response.body.error).toEqual({
       code: "INTERNAL_ERROR",
       message: "Une erreur interne est survenue",
     });
+    expect(consoleError).toHaveBeenCalledWith(
+      "Erreur inattendue",
+      expect.any(Error),
+    );
+    consoleError.mockRestore();
   });
 });

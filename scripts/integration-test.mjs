@@ -25,6 +25,8 @@ const book = await call("/api/books", {
     stock: 2,
   }),
 });
+if (!Number.isInteger(book.id))
+  throw new Error(`Identifiant de livre non numérique: ${book.id}`);
 
 const loan = await call("/api/loans", {
   method: "POST",
@@ -38,6 +40,12 @@ const loan = await call("/api/loans", {
 const afterLoan = await call(`/api/books/${book.id}`);
 if (afterLoan.stock !== 1)
   throw new Error(`Stock après emprunt incorrect: ${afterLoan.stock}`);
+
+const loans = await call("/api/loans");
+const persistedLoan = loans.find((item) => item.id === loan.id);
+if (!persistedLoan || !Number.isInteger(persistedLoan.book_id)) {
+  throw new Error("Référence de livre non numérique dans l'emprunt");
+}
 
 const returnedLoan = await call(`/api/loans/${loan.id}/return`, {
   method: "POST",

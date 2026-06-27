@@ -6,7 +6,7 @@ export class BookRepository {
   async initialize() {
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS books (
-        id BIGSERIAL PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
         author TEXT NOT NULL,
         isbn VARCHAR(13) NOT NULL UNIQUE,
@@ -29,14 +29,14 @@ export class BookRepository {
 
   async findAll() {
     const { rows } = await this.pool.query(
-      "SELECT id, title, author, isbn, stock, created_at FROM books ORDER BY id",
+      "SELECT id::int AS id, title, author, isbn, stock, created_at FROM books ORDER BY id",
     );
     return rows;
   }
 
   async findById(id) {
     const { rows } = await this.pool.query(
-      "SELECT id, title, author, isbn, stock, created_at FROM books WHERE id = $1",
+      "SELECT id::int AS id, title, author, isbn, stock, created_at FROM books WHERE id = $1",
       [id],
     );
     return rows[0] ?? null;
@@ -46,7 +46,7 @@ export class BookRepository {
     const { rows } = await this.pool.query(
       `INSERT INTO books (title, author, isbn, stock)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, title, author, isbn, stock, created_at`,
+       RETURNING id::int AS id, title, author, isbn, stock, created_at`,
       [title, author, isbn, stock],
     );
     return rows[0];
@@ -57,7 +57,7 @@ export class BookRepository {
       `UPDATE books
        SET stock = stock + $2
        WHERE id = $1 AND stock + $2 >= 0
-       RETURNING id, title, author, isbn, stock, created_at`,
+       RETURNING id::int AS id, title, author, isbn, stock, created_at`,
       [id, delta],
     );
     return rows[0] ?? null;

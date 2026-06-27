@@ -9,10 +9,10 @@ interface web responsive.
 | Exigence                    | Réalisation                                                                   |
 | --------------------------- | ----------------------------------------------------------------------------- |
 | Dépôt Git                   | Historique structuré et dépôt GitHub                                          |
-| Pipeline CI                 | GitHub Actions : formatage, ESLint, tests, couverture et build Docker         |
+| Pipeline CI                 | GitHub Actions : formatage, ESLint, tests, couverture, Docker et E2E          |
 | Architecture en couches     | Répertoires `data`, `services` et `controllers` dans chaque backend           |
 | Deux services back          | API Catalogue et API Emprunts, conteneurisées séparément                      |
-| Tests de toutes les couches | Repositories, services et controllers testés avec Vitest                      |
+| Tests de toutes les couches | Data, services, controllers et front DOM testés avec Vitest                   |
 | Mocks web                   | Supertest pour les API et mock HTTP injecté pour l'appel inter-service        |
 | Bonne couverture            | Seuils CI : 90 % lignes/instructions/fonctions et 85 % branches               |
 | Qualité                     | ESLint, Prettier, validation Zod, erreurs normalisées et utilisateur non-root |
@@ -51,6 +51,9 @@ Ouvrir ensuite [http://localhost:8080](http://localhost:8080). Les API restent �
 
 Si le port 8080 est déjà utilisé : `WEB_PORT=18080 docker compose up --build`.
 
+Les bases sont exposées sur `localhost:5433` (catalogue) et `localhost:5434` (emprunts), conformément à
+`.env.example`. Tous les ports hôtes peuvent être remplacés par les variables de ce fichier.
+
 Pour arrêter l'application et supprimer les volumes de développement :
 
 ```bash
@@ -68,25 +71,25 @@ npm run quality
 
 Commandes utiles :
 
-- `npm test` : exécute les tests unitaires et web ;
+- `npm test` : exécute les tests unitaires, HTTP et DOM ;
 - `npm run test:coverage` : génère `coverage/index.html` et le résumé JSON ;
 - `npm run lint` : lance l'analyse statique ;
 - `npm run format:check` : vérifie le formatage ;
-- `npm run lint:report` : produit le rapport ESLint exploité par le rapport final.
+- `npm run lint:report` : produit le rapport ESLint exploité par le rapport final ;
 - `BASE_URL=http://localhost:8080 npm run test:integration` : vérifie un emprunt complet sur les conteneurs.
 
 ## API
 
-| Méthode | Route                   | Fonction                     |
-| ------- | ----------------------- | ---------------------------- |
-| GET     | `/health`               | Santé de chaque backend      |
-| GET     | `/api/books`            | Liste du catalogue           |
-| GET     | `/api/books/:id`        | Détail d'un livre            |
-| POST    | `/api/books`            | Ajout d'un livre             |
-| PATCH   | `/api/books/:id/stock`  | Ajustement atomique du stock |
-| GET     | `/api/loans`            | Liste des emprunts           |
-| POST    | `/api/loans`            | Création d'un emprunt        |
-| POST    | `/api/loans/:id/return` | Retour d'un emprunt          |
+| Méthode | Route                       | Fonction                     |
+| ------- | --------------------------- | ---------------------------- |
+| GET     | `/health` (ports 3001/3002) | Santé de chaque backend      |
+| GET     | `/api/books`                | Liste du catalogue           |
+| GET     | `/api/books/:id`            | Détail d'un livre            |
+| POST    | `/api/books`                | Ajout d'un livre             |
+| PATCH   | `/api/books/:id/stock`      | Ajustement atomique du stock |
+| GET     | `/api/loans`                | Liste des emprunts           |
+| POST    | `/api/loans`                | Création d'un emprunt        |
+| POST    | `/api/loans/:id/return`     | Retour d'un emprunt          |
 
 La spécification complète est disponible dans [docs/openapi.yaml](docs/openapi.yaml).
 
