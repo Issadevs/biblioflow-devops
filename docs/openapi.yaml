@@ -1,0 +1,207 @@
+openapi: 3.1.0
+info:
+  title: BiblioFlow API
+  version: 1.0.0
+  description: API distribuée de catalogue et de gestion des emprunts.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/books:
+    get:
+      operationId: listBooks
+      summary: Lister les livres
+      responses:
+        "200":
+          description: Catalogue courant
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Book" }
+    post:
+      operationId: createBook
+      summary: Ajouter un livre
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NewBook" }
+      responses:
+        "201":
+          description: Livre créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Book" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/books/{id}:
+    parameters:
+      - $ref: "#/components/parameters/BookId"
+    get:
+      operationId: getBook
+      summary: Consulter un livre
+      responses:
+        "200":
+          description: Livre trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Book" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/books/{id}/stock:
+    parameters:
+      - $ref: "#/components/parameters/BookId"
+    patch:
+      operationId: adjustBookStock
+      summary: Ajuster le stock atomiquement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [delta]
+              properties:
+                delta: { type: integer, minimum: -1000, maximum: 1000 }
+      responses:
+        "200":
+          description: Stock ajusté
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Book" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/loans:
+    get:
+      operationId: listLoans
+      summary: Lister les emprunts
+      responses:
+        "200":
+          description: Emprunts courants
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Loan" }
+    post:
+      operationId: createLoan
+      summary: Enregistrer un emprunt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bookId, borrowerName]
+              properties:
+                bookId: { type: integer, minimum: 1 }
+                borrowerName: { type: string, minLength: 2, maxLength: 120 }
+      responses:
+        "201":
+          description: Emprunt créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Loan" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503":
+          description: Catalogue indisponible
+  /api/loans/{id}/return:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      operationId: returnLoan
+      summary: Enregistrer un retour
+      responses:
+        "200":
+          description: Emprunt rendu
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Loan" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+components:
+  parameters:
+    BookId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1 }
+  schemas:
+    Book:
+      type: object
+      required: [id, title, author, isbn, stock, created_at]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        author: { type: string }
+        isbn: { type: string, pattern: '^\\d{13}$' }
+        stock: { type: integer, minimum: 0 }
+        created_at: { type: string, format: date-time }
+    NewBook:
+      type: object
+      required: [title, author, isbn, stock]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        author: { type: string, minLength: 1, maxLength: 200 }
+        isbn: { type: string, pattern: '^\\d{13}$' }
+        stock: { type: integer, minimum: 0, maximum: 10000 }
+    Loan:
+      type: object
+      required: [id, book_id, borrower_name, status, loaned_at]
+      properties:
+        id: { type: string, format: uuid }
+        book_id: { type: integer }
+        borrower_name: { type: string }
+        status: { type: string, enum: [active, returned] }
+        loaned_at: { type: string, format: date-time }
+        returned_at: { type: [string, "null"], format: date-time }
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+  responses:
+    ValidationError:
+      description: Données invalides
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: Conflit métier
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
