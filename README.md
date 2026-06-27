@@ -1,23 +1,55 @@
-# BiblioFlow
+# BiblioFlow - Projet DevOps
 
-BiblioFlow est une application distribuée de gestion de bibliothèque. Elle sépare le catalogue et les
-emprunts en deux services backend autonomes, chacun propriétaire de sa base PostgreSQL, et fournit une
-interface web responsive.
+[![CI](https://github.com/Issadevs/biblioflow-devops/actions/workflows/ci.yml/badge.svg)](https://github.com/Issadevs/biblioflow-devops/actions/workflows/ci.yml)
 
-## Conformité au sujet
+**Auteur : Issa Kane**<br>
+**Année : 2025-2026**
 
-| Exigence                    | Réalisation                                                                   |
-| --------------------------- | ----------------------------------------------------------------------------- |
-| Dépôt Git                   | Historique structuré et dépôt GitHub                                          |
-| Pipeline CI                 | GitHub Actions : formatage, ESLint, tests, couverture, Docker et E2E          |
-| Architecture en couches     | Répertoires `data`, `services` et `controllers` dans chaque backend           |
-| Deux services back          | API Catalogue et API Emprunts, conteneurisées séparément                      |
-| Tests de toutes les couches | Data, services, controllers et front DOM testés avec Vitest                   |
-| Mocks web                   | Supertest pour les API et mock HTTP injecté pour l'appel inter-service        |
-| Bonne couverture            | Seuils CI : 90 % lignes/instructions/fonctions et 85 % branches               |
-| Qualité                     | ESLint, Prettier, validation Zod, erreurs normalisées et utilisateur non-root |
-| Bonus front web             | Tableau de bord HTML/CSS/JavaScript responsive                                |
-| Bonus base de données       | Deux bases PostgreSQL persistantes et isolées                                 |
+> Application distribuée de gestion de bibliothèque réalisée dans le cadre du projet DevOps.
+
+## Documents de remise
+
+- [Rapport final au format PDF](output/pdf/rapport-biblioflow.pdf)
+- [Spécification complète des API](docs/openapi.yaml)
+- [Historique de la CI GitHub Actions](https://github.com/Issadevs/biblioflow-devops/actions)
+
+## Présentation
+
+BiblioFlow permet de gérer un catalogue de livres et leurs emprunts depuis une interface web responsive.
+L'application est composée de deux services backend indépendants :
+
+- **Catalogue** : livres, ISBN et gestion atomique du stock ;
+- **Emprunts** : création, suivi et retour des emprunts.
+
+Chaque service possède sa propre base PostgreSQL. Le service Emprunts communique avec le Catalogue par
+HTTP et compense automatiquement le stock lorsqu'une opération locale échoue.
+
+## Conformité au cahier des charges
+
+| Exigence                    | Réalisation                                                       |
+| --------------------------- | ----------------------------------------------------------------- |
+| Dépôt Git                   | Historique structuré sur GitHub                                   |
+| Pipeline CI                 | Formatage, ESLint, tests, couverture, build Docker et test E2E    |
+| Architecture en couches     | Couches `data`, `services` et `controllers` dans chaque backend   |
+| Deux services backend       | API Catalogue et API Emprunts conteneurisées séparément           |
+| Tests de toutes les couches | Data, services, controllers, client inter-service et front DOM    |
+| Mocks web                   | Supertest pour les API et mock HTTP injecté pour le Catalogue     |
+| Bonne couverture            | 99,4 % des lignes et 98,27 % des branches                         |
+| Qualité logicielle          | ESLint, Prettier, Zod, erreurs normalisées et conteneurs non-root |
+| Bonus front web             | Tableau de bord HTML/CSS/JavaScript responsive                    |
+| Bonus base de données       | Deux bases PostgreSQL persistantes et isolées                     |
+
+## Résultats vérifiés
+
+| Contrôle                | Résultat                                                              |
+| ----------------------- | --------------------------------------------------------------------- |
+| Tests automatisés       | **56 tests réussis, 0 échec**                                         |
+| Couverture des lignes   | **99,4 %**                                                            |
+| Couverture des branches | **98,27 %**                                                           |
+| Analyse ESLint          | **0 erreur, 0 avertissement**                                         |
+| Audit npm               | **0 vulnérabilité**                                                   |
+| Test E2E Docker         | Création d'un livre, emprunt, retour et restauration du stock validés |
+| CI distante             | Jobs « Qualité et tests » et « Docker et intégration » réussis        |
 
 ## Architecture
 
@@ -30,15 +62,12 @@ flowchart LR
     C --> CD[(PostgreSQL Catalogue)]
     L --> LD[(PostgreSQL Emprunts)]
 
-    subgraph Chaque service
+    subgraph Architecture interne de chaque API
       CT[Controller] --> SV[Service] --> DT[Data]
     end
 ```
 
-Le service Emprunts réserve ou restitue le stock auprès du Catalogue. En cas d'échec d'écriture locale,
-une opération de compensation restaure le stock afin d'éviter un état incohérent.
-
-## Démarrage avec Docker
+## Exécution pour la démonstration
 
 Prérequis : Docker Desktop avec Docker Compose.
 
@@ -46,21 +75,41 @@ Prérequis : Docker Desktop avec Docker Compose.
 docker compose up --build
 ```
 
-Ouvrir ensuite [http://localhost:8080](http://localhost:8080). Les API restent également accessibles sur
-`http://localhost:3001` et `http://localhost:3002` pour le diagnostic.
+Ouvrir ensuite [http://localhost:8080](http://localhost:8080).
 
-Si le port 8080 est déjà utilisé : `WEB_PORT=18080 docker compose up --build`.
+Scénario de vérification conseillé :
 
-Les bases sont exposées sur `localhost:5433` (catalogue) et `localhost:5434` (emprunts), conformément à
-`.env.example`. Tous les ports hôtes peuvent être remplacés par les variables de ce fichier.
+1. consulter les livres déjà présents dans le catalogue ;
+2. ajouter un nouveau livre avec son ISBN et son stock ;
+3. enregistrer un emprunt et constater la diminution du stock ;
+4. marquer l'emprunt comme rendu et constater la restauration du stock.
 
-Pour arrêter l'application et supprimer les volumes de développement :
+Pour arrêter l'application et supprimer les volumes de démonstration :
 
 ```bash
 npm run docker:down
 ```
 
-## Développement et qualité
+Si le port 8080 est occupé :
+
+```bash
+WEB_PORT=18080 docker compose up --build
+```
+
+## API principales
+
+| Méthode | Route                                | Fonction                     |
+| ------- | ------------------------------------ | ---------------------------- |
+| GET     | `/health` sur les ports 3001 et 3002 | Santé des backends           |
+| GET     | `/api/books`                         | Liste du catalogue           |
+| GET     | `/api/books/:id`                     | Détail d'un livre            |
+| POST    | `/api/books`                         | Ajout d'un livre             |
+| PATCH   | `/api/books/:id/stock`               | Ajustement atomique du stock |
+| GET     | `/api/loans`                         | Liste des emprunts           |
+| POST    | `/api/loans`                         | Création d'un emprunt        |
+| POST    | `/api/loans/:id/return`              | Retour d'un emprunt          |
+
+## Reproduire les contrôles qualité
 
 Prérequis : Node.js 22 ou plus récent.
 
@@ -69,49 +118,31 @@ npm ci
 npm run quality
 ```
 
-Commandes utiles :
+Commandes complémentaires :
 
-- `npm test` : exécute les tests unitaires, HTTP et DOM ;
-- `npm run test:coverage` : génère `coverage/index.html` et le résumé JSON ;
-- `npm run lint` : lance l'analyse statique ;
-- `npm run format:check` : vérifie le formatage ;
-- `npm run lint:report` : produit le rapport ESLint exploité par le rapport final ;
-- `BASE_URL=http://localhost:8080 npm run test:integration` : vérifie un emprunt complet sur les conteneurs.
+- `npm test` : tests unitaires, HTTP et DOM ;
+- `npm run test:coverage` : rapport de couverture dans `coverage/` ;
+- `BASE_URL=http://localhost:8080 npm run test:integration` : scénario E2E sur Docker ;
+- `npm run lint:report` : rapport ESLint utilisé par le rapport final.
 
-## API
+## Preuve Google Labs
 
-| Méthode | Route                       | Fonction                     |
-| ------- | --------------------------- | ---------------------------- |
-| GET     | `/health` (ports 3001/3002) | Santé de chaque backend      |
-| GET     | `/api/books`                | Liste du catalogue           |
-| GET     | `/api/books/:id`            | Détail d'un livre            |
-| POST    | `/api/books`                | Ajout d'un livre             |
-| PATCH   | `/api/books/:id/stock`      | Ajustement atomique du stock |
-| GET     | `/api/loans`                | Liste des emprunts           |
-| POST    | `/api/loans`                | Création d'un emprunt        |
-| POST    | `/api/loans/:id/return`     | Retour d'un emprunt          |
+Les quatre activités ont été terminées le **28 mai 2026** avec un score de **100 %** :
 
-La spécification complète est disponible dans [docs/openapi.yaml](docs/openapi.yaml).
+- Implementing Cloud Load Balancing for Compute Engine ;
+- A Tour of Google Cloud Hands-on Labs ;
+- Getting Started with Google Cloud ;
+- Infrastructure as Code with Terraform.
 
-## Rapport
+![Progression Google Labs - quatre activités validées à 100 %](docs/evidence/google-labs.png)
 
-Le rapport remis est `output/pdf/rapport-biblioflow.pdf`. Pour le régénérer :
+Cette preuve est également intégrée à la dernière page du [rapport final](output/pdf/rapport-biblioflow.pdf).
 
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements-report.txt
-npm run test:coverage
-npm run lint:report
-.venv/bin/python scripts/generate_report.py
-```
+## Fiabilité technique
 
-La preuve personnelle Google Labs doit être placée sous `docs/evidence/google-labs.png` avant la dernière
-commande. Le générateur l'insère automatiquement sans modifier le code.
-
-## Décisions de fiabilité
-
-- Chaque service possède sa base, ce qui évite le couplage direct par les tables.
-- Les mises à jour de stock utilisent une condition SQL atomique et interdisent un stock négatif.
-- Les entrées sont validées avant la couche métier et les erreurs ne divulguent pas de détails internes.
-- Les conteneurs attendent les healthchecks de leurs dépendances et redémarrent automatiquement.
-- La CI refuse toute baisse sous les seuils de couverture définis dans `vitest.config.js`.
+- bases de données séparées pour limiter le couplage entre services ;
+- requêtes SQL paramétrées et stock négatif interdit par la base ;
+- validation Zod des entrées et erreurs internes masquées ;
+- compensation du stock lors d'un échec distribué ;
+- healthchecks et ordre de démarrage contrôlé dans Docker Compose ;
+- seuils de couverture bloquants et parcours E2E exécuté par la CI.
