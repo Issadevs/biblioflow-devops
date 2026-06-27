@@ -19,7 +19,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "quality": "npm run format:check && npm run lint && npm run test:coverage",
-    "report": ".venv/bin/python scripts/generate_report.py",
+    "report": "npm run lint:report && .venv/bin/python scripts/generate_report.py",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down -v"
   },
