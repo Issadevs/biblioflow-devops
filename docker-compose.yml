@@ -1,0 +1,104 @@
+name: biblioflow
+
+services:
+  catalog-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: catalog
+      POSTGRES_USER: biblioflow
+      POSTGRES_PASSWORD: biblioflow
+    volumes:
+      - catalog-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U biblioflow -d catalog"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  loan-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: loans
+      POSTGRES_USER: biblioflow
+      POSTGRES_PASSWORD: biblioflow
+    volumes:
+      - loan-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U biblioflow -d loans"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  catalog-api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    command: ["npm", "run", "start:catalog"]
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://biblioflow:biblioflow@catalog-db:5432/catalog
+    depends_on:
+      catalog-db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3001/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  loan-api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    command: ["npm", "run", "start:loans"]
+    environment:
+      PORT: 3002
+      DATABASE_URL: postgresql://biblioflow:biblioflow@loan-db:5432/loans
+      CATALOG_SERVICE_URL: http://catalog-api:3001/api
+    depends_on:
+      loan-db:
+        condition: service_healthy
+      catalog-api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3002/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    depends_on:
+      catalog-api:
+        condition: service_healthy
+      loan-api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    restart: unless-stopped
+
+volumes:
+  catalog-data:
+  loan-data:

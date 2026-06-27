@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="BiblioFlow, tableau de bord de gestion des livres et emprunts"
+    />
+    <title>BiblioFlow</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="BiblioFlow, accueil">
+        <span class="brand-mark" aria-hidden="true">BF</span>
+        <span>BiblioFlow</span>
+      </a>
+      <span class="system-status"><i></i> Services connectés</span>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Bibliothèque distribuée</p>
+          <h1>Les bons livres,<br /><em>au bon moment.</em></h1>
+          <p class="hero-copy">
+            Gérez le catalogue, suivez les exemplaires disponibles et
+            centralisez les emprunts depuis un tableau de bord unique.
+          </p>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <span class="book book-one"></span><span class="book book-two"></span
+          ><span class="book book-three"></span>
+        </div>
+      </section>
+
+      <section class="stats" aria-label="Indicateurs">
+        <article>
+          <span>Livres référencés</span><strong id="book-count">—</strong>
+        </article>
+        <article>
+          <span>Exemplaires disponibles</span
+          ><strong id="stock-count">—</strong>
+        </article>
+        <article>
+          <span>Emprunts actifs</span><strong id="loan-count">—</strong>
+        </article>
+      </section>
+
+      <div id="alert" class="alert" role="status" hidden></div>
+
+      <section class="workspace">
+        <div class="content-column">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Catalogue</p>
+              <h2>Livres disponibles</h2>
+            </div>
+            <button class="text-button" id="refresh-button" type="button">
+              Actualiser
+            </button>
+          </div>
+          <div id="book-grid" class="book-grid" aria-live="polite"></div>
+
+          <div class="section-heading loan-heading">
+            <div>
+              <p class="eyebrow">Activité</p>
+              <h2>Emprunts récents</h2>
+            </div>
+          </div>
+          <div id="loan-list" class="loan-list" aria-live="polite"></div>
+        </div>
+
+        <aside class="forms-column">
+          <form id="loan-form" class="panel">
+            <p class="eyebrow">Nouvelle opération</p>
+            <h2>Enregistrer un emprunt</h2>
+            <label for="borrower">Nom de l’emprunteur</label>
+            <input
+              id="borrower"
+              name="borrowerName"
+              minlength="2"
+              maxlength="120"
+              required
+            />
+            <label for="book">Livre</label>
+            <select id="book" name="bookId" required>
+              <option value="">Choisir un livre</option>
+            </select>
+            <button class="primary-button" type="submit">
+              Confirmer l’emprunt
+            </button>
+          </form>
+
+          <form id="book-form" class="panel compact-panel">
+            <p class="eyebrow">Catalogue</p>
+            <h2>Ajouter un livre</h2>
+            <label for="title">Titre</label
+            ><input id="title" name="title" maxlength="200" required />
+            <label for="author">Auteur</label
+            ><input id="author" name="author" maxlength="200" required />
+            <div class="split-fields">
+              <div>
+                <label for="isbn">ISBN-13</label
+                ><input id="isbn" name="isbn" pattern="[0-9]{13}" required />
+              </div>
+              <div>
+                <label for="stock">Stock</label
+                ><input
+                  id="stock"
+                  name="stock"
+                  type="number"
+                  min="0"
+                  max="10000"
+                  value="1"
+                  required
+                />
+              </div>
+            </div>
+            <button class="secondary-button" type="submit">
+              Ajouter au catalogue
+            </button>
+          </form>
+        </aside>
+      </section>
+    </main>
+
+    <footer>BiblioFlow · Deux services, une expérience fluide.</footer>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+node_modules
+coverage
+reports
+tmp
+.git
+.github
+.idea
+output
+tests
+*.md
+
