@@ -10,4 +10,3 @@ COPY --chown=node:node src ./src
 
 USER node
 EXPOSE 3001 3002
-
